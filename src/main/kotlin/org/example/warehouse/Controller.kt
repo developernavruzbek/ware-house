@@ -47,17 +47,14 @@ class WareHouseController(
     ) = service.update(id, request)
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     fun delete(@PathVariable id: Long) =
         service.delete(id)
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun getOne(@PathVariable id: Long): WareHouseResponse =
         service.getOne(id)
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun getAll(): List<WareHouseListResponse> =
         service.getAll()
 }
@@ -143,20 +140,17 @@ class TransactionController(
 ) {
 
     @PostMapping("/income")
-    @PreAuthorize("hasRole('ADMIN')")
     fun createIncome(
         @RequestBody request: TransactionCreateRequestDto
     ) = transactionService.createIncome(request)
 
     @PostMapping("/sale")
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun createSale(
         @Valid @RequestBody request: TransactionSaleCreateRequestDto
     ) = transactionService.createSale(request)
 
 
     @PostMapping("/cancel")
-    @PreAuthorize("hasRole('ADMIN')")
     fun cancelTransaction(
         @Valid @RequestBody request: TransactionCancelRequestDto
     ) = transactionService.cancelTransaction(request)
@@ -170,19 +164,16 @@ class StatisticsController(
 ) {
 
     @PostMapping("/daily-income")
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun getDailyIncome(
         @RequestBody request: DailyIncomeRequestDto
     ): List<DailyIncomeDto> = statisticsService.getDailyIncome(request)
 
     @PostMapping("/daily-top-sale")
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun getDailyTopSale(
         @RequestBody request: DailyTopSaleRequestDto
     ): List<DailyTopSaleDto> = statisticsService.getDailyTopSale(request)
 
     @PostMapping("/expired-products")
-    @PreAuthorize("hasAnyRole('ADMIN','WORKER')")
     fun getExpiredProducts(
         @RequestBody request: ExpiredProductRequestDto
     ): List<ExpiredProductDto> = statisticsService.getExpiredProducts(request)
