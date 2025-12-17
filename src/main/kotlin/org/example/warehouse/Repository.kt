@@ -55,33 +55,39 @@ class BaseRepositoryImpl<T : BaseEntity>(
 @Repository
 interface UserRepository: BaseRepository<User>{
     fun findByPhone(phone: String): User?
-
+    fun findAllByDeletedFalseAndStatus(status: Status): List<User>
+    fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): User?
 }
 @Repository
 interface WareHouseRepository: BaseRepository<WareHouse>{
-
-    fun findByIdAndStatus(
-        id: Long,
-        status: Status
-    ): WareHouse?
-
-    fun findByName(name: String): WareHouse?
+    fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): WareHouse?
+    fun findAllByDeletedFalseAndStatus(status: Status = Status.ACTIVE): List<WareHouse>
+    fun findByNameAndDeletedFalseAndStatus(name: String, status: Status = Status.ACTIVE): WareHouse?
 }
+
+
 @Repository
 interface CategoryRepository: BaseRepository<Category>{
-    fun findByName(name: String): Category?
-    fun existsByName(name: String): Boolean
+    fun findByNameAndDeletedFalseAndStatus(name: String, status: Status = Status.ACTIVE): Category?
+    fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): Category?
+    fun findAllByDeletedFalseAndStatus(status: Status = Status.ACTIVE): List<Category>
 }
+
+
 @Repository
 interface MeasurementUnitRepository: BaseRepository<MeasurementUnit>{
-    fun findByName  (name: String): MeasurementUnit?
+    fun findByNameAndDeletedFalseAndStatus(name: String, status: Status = Status.ACTIVE): MeasurementUnit?
+    fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): MeasurementUnit?
 }
+
 
 @Repository
 interface SupplierRepository: BaseRepository<Supplier>{
-    fun findByName  (name: String): Supplier?
-    fun findByPhone(phone: String): Supplier?
+    fun findByPhoneAndDeletedFalseAndStatus(phone: String, status: Status = Status.ACTIVE): Supplier?
+    fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): Supplier?
+    fun findAllByDeletedFalseAndStatus(status: Status = Status.ACTIVE): List<Supplier>
 }
+
 
 @Repository
 interface ProductRepository: BaseRepository<Product>{

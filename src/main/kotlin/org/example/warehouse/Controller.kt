@@ -9,15 +9,16 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDate
+
 
 @RestController
 @RequestMapping("/auth")
 class AuthController(
     private val userService: UserService
-) {
+)
+{
+
     @PostMapping("/register")
     fun create(@RequestBody request: UserCreateRequest) = userService.create(request)
 
@@ -26,7 +27,32 @@ class AuthController(
     fun login(@RequestBody req: LoginRequest): JwtResponse {
         return userService.loginIn(req)
     }
+
 }
+
+
+
+@RestController
+@RequestMapping("/users")
+class UserController(
+    private val userService: UserService
+)
+{
+    @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    fun getAll() = userService.getAllUsers()
+
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    fun update(@PathVariable id:Long , @RequestBody userUpdateRequest: UserUpdateRequest) = userService.update(id, userUpdateRequest)
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    fun delete(@PathVariable id:Long) = userService.delete(id)
+
+}
+
 
 @RestController
 @RequestMapping("/warehouse")
@@ -35,18 +61,20 @@ class WareHouseController(
 ) {
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun create(@RequestBody request: WareHouseRequest) =
         service.create(request)
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun update(
         @PathVariable id: Long,
         @RequestBody request: WareHouseUpdateRequest
     ) = service.update(id, request)
 
+
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun delete(@PathVariable id: Long) =
         service.delete(id)
 
@@ -59,21 +87,22 @@ class WareHouseController(
         service.getAll()
 }
 
-
-
 @RestController
 @RequestMapping("/category")
 class CategoryController(
     private val service: CategoryService
 ) {
     @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun create(@RequestBody request: CategoryRequest) = service.create(request)
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun update(@PathVariable id: Long, @RequestBody request: CategoryUpdateRequest) =
         service.update(id, request)
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun delete(@PathVariable id: Long) = service.delete(id)
 
     @GetMapping("/{id}")
@@ -87,13 +116,16 @@ class CategoryController(
 @RestController
 @RequestMapping("/measurementUnit")
 class MeasurementUnitController(
-    private val measurementUnitService: MeasurementUnitService
+    private val measurementUnitService: MeasurementUnitService,
 ){
+
     @PostMapping()
     fun create(@RequestBody measurementUnitRequest: MeasurementUnitRequest) =  measurementUnitService.create(measurementUnitRequest)
 
     @GetMapping("/{id}")
     fun getOne(@PathVariable id:Long): MeasurementUnitResponse = measurementUnitService.getOne(id)
+
+
 }
 
 
@@ -102,11 +134,24 @@ class MeasurementUnitController(
 class SupplierController(
     private val supplierService: SupplierService
 ){
+
+    @GetMapping
+    fun getAllSuppliers() = supplierService.getAll()
+
     @PostMapping()
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun create(@RequestBody supplierRequest: SupplierRequest) =  supplierService.create(supplierRequest)
 
     @GetMapping("/{id}")
     fun getOne(@PathVariable id:Long): SupplierResponse = supplierService.getOne(id)
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    fun update(@PathVariable id:Long, @RequestBody supplierUpdateRequest: SupplierUpdateRequest) = supplierService.update(id, supplierUpdateRequest)
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    fun delete(@PathVariable id:Long) = supplierService.delete(id)
 }
 
 @RestController
@@ -140,6 +185,7 @@ class TransactionController(
 ) {
 
     @PostMapping("/income")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun createIncome(
         @RequestBody request: TransactionCreateRequestDto
     ) = transactionService.createIncome(request)
@@ -151,6 +197,7 @@ class TransactionController(
 
 
     @PostMapping("/cancel")
+    @PreAuthorize("hasAuthority('ADMIN')")
     fun cancelTransaction(
         @Valid @RequestBody request: TransactionCancelRequestDto
     ) = transactionService.cancelTransaction(request)

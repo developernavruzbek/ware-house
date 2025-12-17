@@ -1,7 +1,6 @@
 package org.example.warehouse
 
 
-import jakarta.annotation.Nonnull
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -24,10 +23,33 @@ data class UserCreateRequest(
 
 
 data class UserUpdateRequest(
-    val username: String?,
+    val phone: String?,
     val firstname: String?,
     val lastname: String?,
-    val role: UserRole?
+    val role: UserRole?,
+    val password :String?,
+    val wareHouseId:Long? =null,
+    val status: Status?
+)
+
+
+data class UserResponse(
+    val id: Long?,
+    val firstName: String?,
+    val role: UserRole?,
+    val status: Status
+)
+
+
+data class UserFullResponse(
+    val id: Long?,
+    val firstName: String,
+    val lastName: String,
+    val phone:String,
+    val role: UserRole,
+    val wareHouseId:Long?,
+    val wareHouseName:String,
+    val status: Status
 )
 
 
@@ -95,7 +117,7 @@ data class CategoryResponse(
 
 data class CategoryUpdateRequest(
     val name: String?,
-    val parentId: Long?,
+    val parentId: Long? = null,
     val status: Status?
 )
 
@@ -145,6 +167,13 @@ data class SupplierResponse(
     val status: Status
 )
 
+data class SupplierUpdateRequest(
+    val name:String?,
+    val phone:String?,
+    val status: Status?
+)
+
+
 data class ProductRequest(
     val name:String,
     val measurementUnitId:Long,
@@ -161,8 +190,8 @@ data class ProductResponse(
 
 data class ProductUpdateRequest(
     val name: String?,
-    val categoryId: Long?,
-    val measurementUnitId: Long?
+    val categoryId: Long? = null,
+    val measurementUnitId: Long? = null
 )
 
 data class ProductListResponse(
@@ -265,9 +294,6 @@ data class ExpiredProductDto(
     val expiredQuantity: BigDecimal,
     val expireDate: LocalDate
 )
-
-
-
 
 
 

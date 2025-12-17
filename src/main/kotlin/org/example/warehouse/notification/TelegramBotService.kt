@@ -61,7 +61,7 @@ class ExpiredProductNotifier(
 
     private val myChatId = "6378358684"
 
-    @Scheduled(cron = "0 */2 * * * ?")
+    @Scheduled(cron = "0 0 9 * * ?")
     @Transactional
     fun checkExpiringProducts() {
 

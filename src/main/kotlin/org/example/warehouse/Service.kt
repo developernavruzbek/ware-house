@@ -6,12 +6,15 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.lang.Exception
 import java.math.BigDecimal
 
 interface UserService {
     fun create(body:UserCreateRequest)
     fun loginIn(request: LoginRequest) : JwtResponse
+    fun getAllUsers(): List<UserResponse>
+    fun update(id:Long , userUpdateRequest: UserUpdateRequest)
+    fun getOneUser(id:Long): UserFullResponse
+    fun delete(id:Long)
 }
 
 @Service
@@ -24,6 +27,7 @@ class UserServiceImpl(
     private val jwtService: JwtService
 
 ): UserService{
+    @Transactional
     override fun create(body: UserCreateRequest) {
 
     body.run {
@@ -31,7 +35,7 @@ class UserServiceImpl(
             throw PhoneNumberAlreadyExistsException()
         }?:run {
 
-            val wareHouse = wareHouseRepository.findByIdAndStatus(warehouseId, Status.ACTIVE)
+            val wareHouse = wareHouseRepository.findByIdAndDeletedFalseAndStatus(warehouseId, Status.ACTIVE)
                 ?:throw WareHouseNotFoundException()
             val savedUser = userRepository.save(mapper.toEntity(body,wareHouse,uniqueNumberGenerator.generate(8)))
             println("Sawed user => $savedUser")
@@ -39,7 +43,6 @@ class UserServiceImpl(
     }
 
     }
-
 
     override fun loginIn(request: LoginRequest): JwtResponse {
        val user =  userRepository.findByPhone(request.phone)
@@ -50,6 +53,57 @@ class UserServiceImpl(
      }
         val token  = jwtService.generateToken(user.phone, user.role.name)
         return JwtResponse(token)
+    }
+
+    override fun getAllUsers(): List<UserResponse> {
+        var findAllNotDeleted = userRepository.findAllNotDeleted()
+        var usersResponse :List<UserResponse> = findAllNotDeleted.map { mapper.toDto(it) }
+        return usersResponse
+    }
+    @Transactional
+    override fun update(id:Long, userUpdateRequest: UserUpdateRequest) {
+       var user =  userRepository.findByIdAndDeletedFalse(id)
+            ?:throw UserNotFoundException()
+
+        userUpdateRequest.run {
+            phone?.let{newPhone->
+                var exists = userRepository.findByPhone(newPhone)
+
+                if (exists!=null && exists.id!=user.id){
+                    throw PhoneNumberAlreadyExistsException()
+                }
+                  user.phone = newPhone
+
+            }
+            firstname?.let { user.firstName = it }
+            lastname?.let { user.lastName = it }
+            role?.let { user.role = it }
+            status?.let { user.status = it }
+            password?.let {
+                user.password = passwordEncoder.encode(it)
+            }
+
+            if (wareHouseId != null && wareHouseId > 0) {
+                val warehouse = wareHouseRepository.findByIdAndDeletedFalse(wareHouseId)
+                    ?: throw WareHouseNotFoundException()
+                user.wareHouse = warehouse
+            }
+
+        }
+        userRepository.save(user)
+
+    }
+
+    override fun getOneUser(id: Long) : UserFullResponse{
+       val user =  userRepository.findByIdAndDeletedFalse(id)
+             ?:throw UserNotFoundException()
+        return mapper.toDtoFull(user)
+    }
+    @Transactional
+    override fun delete(id: Long) {
+        userRepository.findByIdAndDeletedFalse(id)
+            ?:throw UserNotFoundException()
+        userRepository.trash(id)
     }
 }
 
@@ -68,21 +122,21 @@ class WareHouseServiceImpl(
     private val repository: WareHouseRepository,
     private val mapper: WarehouseMapper
 ) : WareHouseService {
-
+    @Transactional
     override fun create(request: WareHouseRequest) {
-        repository.findByName(request.name)?.let {
+        repository.findByNameAndDeletedFalseAndStatus(request.name)?.let {
             throw WareHouseNameAlreadyExists()
         }
         repository.save(mapper.toEntity(request))
     }
-
+    @Transactional
     override fun update(id: Long, request: WareHouseUpdateRequest) {
         val entity = repository.findByIdAndDeletedFalse(id)
             ?: throw WareHouseNotFoundException()
 
         repository.save(mapper.updateEntity(entity, request))
     }
-
+    @Transactional
     override fun delete(id: Long) {
         repository.trash(id) ?: throw WareHouseNotFoundException()
     }
@@ -113,19 +167,19 @@ class CategoryServiceImpl(
     private val repository: CategoryRepository,
     private val mapper: CategoryMapper
 ) : CategoryService {
-
+    @Transactional
     override fun create(request: CategoryRequest) {
-        repository.findByName(request.name)?.let { throw CategoryNameAlreadyExists() }
+        repository.findByNameAndDeletedFalseAndStatus(request.name)?.let { throw CategoryNameAlreadyExists() }
         val parent = request.parentId?.let { repository.findByIdAndDeletedFalse(it) }
         repository.save(mapper.toEntity(request, parent))
     }
-
+    @Transactional
     override fun update(id: Long, request: CategoryUpdateRequest) {
         val entity = repository.findByIdAndDeletedFalse(id) ?: throw CategoryNotFound()
         val parent = request.parentId?.let { repository.findByIdAndDeletedFalse(it) }
         repository.save(mapper.updateEntity(entity, request, parent))
     }
-
+    @Transactional
     override fun delete(id: Long) {
         repository.trash(id) ?: throw CategoryNotFound()
     }
@@ -150,8 +204,9 @@ class MeasurementUnitServiceImpl(
     private val measurementUnitRepository : MeasurementUnitRepository,
     private val mapper: MeasurementUnitMapper
 ): MeasurementUnitService {
+    @Transactional
     override fun create(request: MeasurementUnitRequest) {
-       measurementUnitRepository.findByName(request.name)?.let {
+       measurementUnitRepository.findByNameAndDeletedFalseAndStatus(request.name)?.let {
            throw MeasurementUnitNameAlreadyExists()
        }
         measurementUnitRepository.save(mapper.toEntity(request))
@@ -169,26 +224,55 @@ class MeasurementUnitServiceImpl(
 interface SupplierService{
     fun create(request:SupplierRequest)
     fun getOne(id:Long):SupplierResponse
+    fun update(id:Long, supplierUpdateRequest: SupplierUpdateRequest)
+    fun getAll(): List<SupplierResponse>
+    fun delete(id:Long)
 
 }
 
 @Service
 class SupplierServiceImpl(
-    private val currencyRepository: SupplierRepository ,
+    private val supplierRepository: SupplierRepository ,
     private val mapper: SupplierMapper
 ): SupplierService {
 
+    @Transactional
     override fun create(request: SupplierRequest) {
-        currencyRepository.findByPhone(request.phone)?.let {
+        supplierRepository.findByPhoneAndDeletedFalseAndStatus(request.phone)?.let {
             throw SupplierPhoneAlreadyExists()
         }
-        currencyRepository.save(mapper.toEntity(request))
+        supplierRepository.save(mapper.toEntity(request))
     }
 
     override fun getOne(id: Long): SupplierResponse {
-        currencyRepository.findByIdAndDeletedFalse(id)?.let {
+        supplierRepository.findByIdAndDeletedFalse(id)?.let {
             return mapper.toDto(it)
         }?:throw SupplierNotFound()
+    }
+
+    @Transactional
+    override fun update(id: Long, supplierUpdateRequest: SupplierUpdateRequest) {
+        var supplier: Supplier = supplierRepository.findByIdAndDeletedFalse(id)
+            ?:throw SupplierNotFound()
+
+        supplierUpdateRequest.run {
+            name?.let {supplier.name = it}
+            phone?.let { supplier.phone = it }
+            status?.let {supplier.status = it }
+        }
+
+        supplierRepository.save(supplier)
+    }
+
+    override fun getAll(): List<SupplierResponse> {
+        var findAllNotDeleted = supplierRepository.findAllNotDeleted()
+       return  findAllNotDeleted.map { mapper.toDto(it) }
+    }
+
+    @Transactional
+    override fun delete(id: Long) {
+        supplierRepository.findByIdAndDeletedFalse(id)
+            ?:throw SupplierNotFound()
     }
 }
 
@@ -210,6 +294,7 @@ class ProductServiceImpl(
     private val uniqueNumberGenerator: UniqueNumberGenerator
 ) : ProductService {
 
+    @Transactional
     override fun create(request: ProductRequest) {
         val category = categoryRepository.findByIdAndDeletedFalse(request.categoryId)
             ?: throw CategoryNotFound()
@@ -225,6 +310,7 @@ class ProductServiceImpl(
         ))
     }
 
+    @Transactional
     override fun update(id: Long, request: ProductUpdateRequest) {
         val entity = productRepository.findByIdAndDeletedFalse(id)
             ?: throw ProductNotFound()
@@ -232,17 +318,22 @@ class ProductServiceImpl(
         request.name?.let { entity.name = it }
 
         request.categoryId?.let {
-            entity.category = categoryRepository.findByIdAndDeletedFalse(it) ?: throw CategoryNotFound()
+            if (it>0){
+                entity.category = categoryRepository.findByIdAndDeletedFalse(it) ?: throw CategoryNotFound()
+            }
         }
 
         request.measurementUnitId?.let {
-            entity.measurementUnit = measurementUnitRepository.findByIdAndDeletedFalse(it)
-                ?: throw MeasurementUnitNotFound()
+            if(it>0){
+                entity.measurementUnit = measurementUnitRepository.findByIdAndDeletedFalse(it)
+                    ?: throw MeasurementUnitNotFound()
+            }
+
         }
 
         productRepository.save(entity)
     }
-
+    @Transactional
     override fun delete(id: Long) {
         productRepository.trash(id) ?: throw ProductNotFound()
     }
@@ -281,12 +372,12 @@ class TransactionServiceImpl(
     @Transactional
     override fun createIncome(request: TransactionCreateRequestDto) {
 
-        val warehouse = warehouseRepository.findByIdAndDeletedFalse(request.warehouseId)
+        val warehouse = warehouseRepository.findByIdAndDeletedFalseAndStatus(request.warehouseId)
             ?: throw WareHouseNotFoundException()
 
 
         val supplier = request.supplierId?.let {
-            supplierRepository.findByIdAndDeletedFalse(it)
+            supplierRepository.findByIdAndDeletedFalseAndStatus(it)
                 ?: throw SupplierNotFound()
         }
 
@@ -338,7 +429,7 @@ class TransactionServiceImpl(
     @Transactional
     override fun createSale(request: TransactionSaleCreateRequestDto) {
 
-        val warehouse = warehouseRepository.findByIdAndDeletedFalse(request.warehouseId)
+        val warehouse = warehouseRepository.findByIdAndDeletedFalseAndStatus(request.warehouseId)
             ?: throw WareHouseNotFoundException()
 
         val transaction = transactionSaleMapper.toEntity(
@@ -357,7 +448,7 @@ class TransactionServiceImpl(
 
         request.items.forEach { itemDto ->
             val product = products[itemDto.productId]
-                ?: throw ProductNotFound()  // RuntimeException o'rniga
+                ?: throw ProductNotFound()
 
             val stock = stockRepository.findByWarehouseAndProduct(warehouse, product)
                 ?: throw StockNotFoundException(product.name)
@@ -389,8 +480,7 @@ class TransactionServiceImpl(
     @Transactional
     override fun cancelTransaction(request: TransactionCancelRequestDto) {
         val transaction = transactionRepository.findById(request.transactionId)
-            .orElseThrow { RuntimeException("Transaction not found: ${request.transactionId}") }
-
+            .orElseThrow { TransactionNotFoundException("${request.transactionId}") }
         if (transaction.status == TransactionStatus.CANCELED) {
             throw RuntimeException("Transaction already canceled")
         }
@@ -449,7 +539,8 @@ interface StatisticsService {
 class StatisticsServiceImpl(
     private val transactionItemRepository: TransactionItemRepository,
     private val warehouseRepository: WareHouseRepository
-) : StatisticsService {
+) : StatisticsService
+{
 
     override fun getDailyIncome(request: DailyIncomeRequestDto): List<DailyIncomeDto> {
         warehouseRepository.findByIdAndDeletedFalse(request.warehouseId)
