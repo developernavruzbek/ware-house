@@ -196,6 +196,9 @@ class CategoryServiceImpl(
 interface MeasurementUnitService{
     fun create(request:MeasurementUnitRequest)
     fun getOne(id:Long):MeasurementUnitResponse
+    fun update(id:Long, measurementUnitUpdate: MeasurementUnitUpdate)
+    fun getAll(): List<MeasurementUnitResponse>
+    fun delete(id: Long)
 
 }
 
@@ -216,6 +219,35 @@ class MeasurementUnitServiceImpl(
         measurementUnitRepository.findByIdAndDeletedFalse(id)?.let {
             return mapper.toDto(it)
          }?:throw MeasurementUnitNotFound()
+    }
+
+    override fun update(id: Long, measurementUnitUpdate: MeasurementUnitUpdate) {
+       var measurementUnit =  measurementUnitRepository.findByIdAndDeletedFalse(id)
+            ?:throw MeasurementUnitNotFound()
+
+        measurementUnitUpdate.run {
+            name?.let {
+                measurementUnitRepository.findByNameAndDeletedFalse(it)?.let {
+                    if (it.id!=measurementUnit.id){
+                        throw MeasurementUnitNameAlreadyExists()
+                    }
+                }
+                measurementUnit.name = it
+            }
+            status?.let { measurementUnit.status =it}
+        }
+        measurementUnitRepository.save(measurementUnit)
+    }
+
+    override fun getAll(): List<MeasurementUnitResponse> {
+        return measurementUnitRepository.findAllNotDeleted().map { mapper.toDto(it) }
+
+    }
+
+    override fun delete(id: Long) {
+        measurementUnitRepository.findByIdAndDeletedFalse(id)
+            ?:throw MeasurementUnitNotFound()
+        measurementUnitRepository.trash(id)
     }
 }
 

@@ -1,6 +1,7 @@
 package org.example.warehouse
 
 
+import org.jetbrains.annotations.NotNull
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -151,6 +152,11 @@ data class MeasurementUnitResponse(
     val id:Long?,
     val name :String,
     val status: Status
+)
+
+data class MeasurementUnitUpdate(
+    val name:String?,
+    val status: Status?
 )
 
 

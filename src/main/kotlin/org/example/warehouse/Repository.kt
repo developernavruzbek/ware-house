@@ -76,6 +76,7 @@ interface CategoryRepository: BaseRepository<Category>{
 
 @Repository
 interface MeasurementUnitRepository: BaseRepository<MeasurementUnit>{
+    fun findByNameAndDeletedFalse(name:String) : MeasurementUnit?
     fun findByNameAndDeletedFalseAndStatus(name: String, status: Status = Status.ACTIVE): MeasurementUnit?
     fun findByIdAndDeletedFalseAndStatus(id: Long, status: Status = Status.ACTIVE): MeasurementUnit?
 }

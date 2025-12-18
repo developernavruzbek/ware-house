@@ -119,13 +119,20 @@ class MeasurementUnitController(
     private val measurementUnitService: MeasurementUnitService,
 ){
 
+    @GetMapping
+    fun getAll() = measurementUnitService.getAll()
+
     @PostMapping()
     fun create(@RequestBody measurementUnitRequest: MeasurementUnitRequest) =  measurementUnitService.create(measurementUnitRequest)
 
     @GetMapping("/{id}")
     fun getOne(@PathVariable id:Long): MeasurementUnitResponse = measurementUnitService.getOne(id)
 
+    @PutMapping("/{id}")
+    fun update (@PathVariable id:Long, @RequestBody measurementUnitUpdate: MeasurementUnitUpdate) = measurementUnitService.update(id, measurementUnitUpdate)
 
+    @DeleteMapping("/{id}")
+    fun delete(@PathVariable id:Long)  = measurementUnitService.delete(id)
 }
 
 
